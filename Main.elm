@@ -10,15 +10,36 @@ type Block a
   | Paragraph
 
 
+flatmap : Maybe (Maybe a) -> Maybe a
+flatmap maybe =
+  let
+    _ =
+      log "maybe" maybe
+  in
+    case maybe of
+      Just (Just a) ->
+        Just a
+      _ ->
+        Nothing
+
+
 makeHeader : List (Maybe String) -> Block (Maybe Int, Maybe String)
 makeHeader header =
   let
     (num, content) =
       case header of
-        num1::content1::xs -> (num1, content1)
-        _ -> (Just defaultContent, Just defaultContent)
+        num::content::xs -> (num, content)
+        _ -> (Nothing, Nothing)
   in
-    Header (Maybe.map (String.toInt >> Result.toMaybe >> Maybe.withDefault defaultHeader) num, content)
+    Header (Maybe.map String.length num, content)
+
+reverseHeader : Block (Maybe Int, Maybe String) -> String
+reverseHeader header =
+  case header of
+    Header (num, content) ->
+      "h2 aa"
+    _ ->
+      ""
 
 
 reHeader : Regex
@@ -41,7 +62,7 @@ replaceHeader { match, submatches, index } =
     _ =
       log "match" match
     _ =
-      log "submatches" (makeHeader submatches) |> toString
+      log "submatches" (reverseHeader <| makeHeader submatches) |> toString
     _ =
       log "index" index |> toString
 
