@@ -113,6 +113,10 @@ blockquotesMatching =
 
 
 
+-- INLINE
+
+
+
 
 
         
@@ -121,8 +125,8 @@ blockquotesMatching =
 
 -- Main Login
 
-matchers : List (Matching a)
-matchers =
+blockMatchers : List (Matching a)
+blockMatchers =
   [ headerMatching
   , blockquotesMatching
   ]
@@ -155,7 +159,7 @@ convertBlock str =
       }
     
     matched =
-      List.map matching matchers
+      List.map matching blockMatchers
 
     filted =
       List.filter (\{ result } -> result) matched
@@ -180,9 +184,38 @@ convertBlock str =
 
 test : String
 test = """
-### 123
+### 123 {#iddd}
 
-haaaahaaa
+ha**aaa**ha_aa_cccccc[c](http://www.baidu.com "tittlee")ccdddddddd
+asd~fasdf~asdfopqwie
+asdfpoiq[23333][id]wer
+
+[id]: http://www.baidu.com "what's the fuck"
+
+wow`fuckit`wwwwwwwwww![233](img/233)wwww
+
+  function() {
+    
+  }
+
+```js
+function() {
+  console.log("23333")
+}
+```
+
+| name | age | page |
+| ---- | --= | -+-= |
+| mama | 123 | 111  |
+| baba | 456 | 222  |
+
+* asdasd
+* 123123
+  * lii
++ 123
+- aspipqwe
+1. qwe
+2. 23543245
 
 ## header 2
 axx
