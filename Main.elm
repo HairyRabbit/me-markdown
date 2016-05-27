@@ -7,120 +7,13 @@ import Regex exposing (..)
 import Debug exposing (log)
 import String
 
-
-type alias RegexMatch = Match -> String
-
-type alias Matcher a = List (Maybe String) -> Block a
-
-type alias Reverser a = Block a -> String
-
-type alias Matching a =
-  { flag : a -> Block a
-  , matcher : RegexMatch
-  , regexp : Regex
-  , result : Bool
-  , match : String
-  }
-
-
-type Block a
-  = Paragraph
-  | Header a
-  | Blockquotes a
-
-
--- Header
-
-reHeader : Regex
-reHeader =
-  regex "(#+)\\s*(.*)"
-
-    
-matchHeader : Matcher (Maybe Int, Maybe String)
-matchHeader header =
-  case header of
-    num::content::[] ->
-      Header (Maybe.map String.length num, content)
-    _ ->
-      Header (Nothing, Nothing)
-
-
-reverseHeader : Reverser (Maybe Int, Maybe String)
-reverseHeader header =
-  case header of
-    Header (Just num, Just content) ->
-      viewHeader num content
-    _ ->
-      ""
-
-viewHeader : Int -> String -> String
-viewHeader num content =
-  let
-    n =
-      toString num
-  in
-    "<h" ++ n ++ ">" ++ content ++ "</h" ++ n ++ ">"
-
-
-headerMatching : Matching a
-headerMatching =
-  { flag = Header
-  , matcher = replaceBlock matchHeader reverseHeader
-  , regexp = reHeader
-  , result = False
-  , match = ""
-  }
-
-
-
--- Blockquotes
-
-reBlockquotes : Regex
-reBlockquotes =
-  regex ">\\s*(.*)"
-
-
-matchBlockquotes : Matcher (Maybe String)
-matchBlockquotes bq =
-  case bq of
-    content::[] ->
-      Blockquotes content
-    _ ->
-      Blockquotes Nothing
-
-reverseBlockquotes : Reverser (Maybe String)
-reverseBlockquotes bq =
-  case bq of
-    Blockquotes (Just content) ->
-      viewBlockquotes content
-    _ ->
-      ""
-
-viewBlockquotes : String -> String
-viewBlockquotes content =
-  "<blockquote>" ++ content ++ "</blockquote>"
-
-
-blockquotesMatching : Matching a
-blockquotesMatching =
-  { flag = Blockquotes
-  , matcher = replaceBlock matchBlockquotes reverseBlockquotes
-  , regexp = reBlockquotes
-  , result = False
-  , match = ""
-  }
-
-
-
-
--- INLINE
-
-
-
-
-
-        
-
+import Markup.Type exposing (..)
+import Markup.Matcher.Header exposing (headerMatching)
+import Markup.Matcher.Blockquotes exposing (blockquotesMatching)
+import Markup.Matcher.Bold exposing (boldMatching)
+import Markup.Matcher.Italic exposing (italicMatching)
+import Markup.Matcher.Code exposing (codeMatching)
+import Markup.Matcher.Link exposing (linkMatching)
 
 
 -- Main Login
@@ -130,12 +23,6 @@ blockMatchers =
   [ headerMatching
   , blockquotesMatching
   ]
-
-replaceBlock : Matcher a -> Reverser a -> RegexMatch
-replaceBlock matcher reverser { submatches } =
-  submatches
-    |> matcher
-    |> reverser
          
 
 defaultBlock : String -> String
@@ -171,7 +58,12 @@ convertBlock str =
       Regex.replace Regex.All
 
     default =
-      defaultBlock str
+      --defaultBlock str
+      str
+        |> replacer boldMatching.regexp boldMatching.matcher
+        |> replacer italicMatching.regexp italicMatching.matcher
+        |> replacer codeMatching.regexp codeMatching.matcher
+        |> replacer linkMatching.regexp linkMatching.matcher
 
   in
     case result of
@@ -186,11 +78,16 @@ test : String
 test = """
 ### 123 {#iddd}
 
-ha**aaa**ha_aa_cccccc[c](http://www.baidu.com "tittlee")ccdddddddd
-asd~fasdf~asdfopqwie
-asdfpoiq[23333][id]wer
+ha**aaa**ha_aa_cccccc[c](http://www.baidu.com)ccdddddddd
+asd~fasdf~asdfopqwie[ttt]()
+asdfpoiq[23333]()
 
-[id]: http://www.baidu.com "what's the fuck"
+[baidu]()
+
+23321asdlj,zmnxvciopwqerkljnlkasdf
+asdfipowqerpoi;lajs ldkfj
+
+[baidu]: http://www.baidu.com
 
 wow`fuckit`wwwwwwwwww![233](img/233)wwww
 
@@ -220,15 +117,20 @@ function() {
 ## header 2
 axx
 
-456
+`456asd`ad
 
-> 23333 what's fuck
-"""          
+> 23333 what's `fuck`
+"""
 
 main =
-  test
-    |> String.trim
-    |> splitBlocks
-    |> List.map convertBlock
-    |> toString
-    |> text
+  let
+    _ =
+      log "test" <| Regex.replace Regex.All boldMatching.regexp boldMatching.matcher "233*1*123asd_asasdf*2*"
+  in
+    test
+      |> String.trim
+      |> splitBlocks
+      |> List.map convertBlock
+      --|> String.join ""
+      |> toString
+      |> text
